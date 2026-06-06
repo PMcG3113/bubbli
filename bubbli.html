@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bubbli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F3EEFF;
+    --panel: #FFFFFF;
+    --purple: #8B5CF6;
+    --purple-dark: #7C3AED;
+    --purple-soft: #EDE7FF;
+    --sky: #6FB1F7;          /* Arya's pick: sky blue outgoing bubbles */
+    --peach: #FFF1E8;        /* chat background, like the reference */
+    --ink: #2C2740;
+    --muted: #9B93B2;
+    --mint: #BFE9D6;
+    --yellow: #FFE6A6;
+    --pink: #FFD3E2;
+    --line: #F0ECF7;
+  }
+  *{ box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body{ height: 100%; }
+  body{
+    font-family: 'Nunito', sans-serif;
+    background: radial-gradient(120% 100% at 50% 0%, #F7F2FF 0%, #ECE4FF 60%, #E7DEFF 100%);
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .phone{
+    position: relative; width: 100%; max-width: 400px; height: min(820px, 94vh);
+    background: var(--panel); border-radius: 34px; overflow: hidden;
+    box-shadow: 0 30px 60px rgba(99,72,160,0.28), 0 4px 0 #fff inset;
+  }
+  .screen{ position: absolute; inset: 0; display: none; flex-direction: column; }
+  .screen.show{ display: flex; }
+
+  /* sparkle decoration layer */
+  .deco{ position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .deco .s{ position: absolute; opacity: .5; }
+
+  /* ---------- WELCOME ---------- */
+  #welcome{ align-items: center; justify-content: center; text-align: center;
+    background: linear-gradient(160deg, #F4EFFF 0%, #EFE7FF 100%); overflow: hidden; padding: 32px; }
+  .blob{ position: absolute; border-radius: 50%; filter: blur(2px); opacity: .9; }
+  .blob.b1{ width: 150px; height: 150px; background: var(--mint); top: -40px; left: -40px; }
+  .blob.b2{ width: 120px; height: 120px; background: var(--yellow); top: 60px; right: -40px; }
+  .blob.b3{ width: 170px; height: 170px; background: var(--pink); bottom: -50px; right: -30px; }
+  .blob.b4{ width: 110px; height: 110px; background: #CFE0FF; bottom: 30px; left: -45px; }
+  .logo-mark{ position: relative; width: 96px; height: 84px; margin-bottom: 22px; z-index: 2; }
+  .logo-mark .bub{ position: absolute; box-shadow: 0 10px 22px rgba(124,58,237,0.25); }
+  .logo-mark .big{ width: 70px; height: 70px; background: var(--purple); left: 0; top: 0; border-radius: 26px 26px 26px 8px; }
+  .logo-mark .small{ width: 40px; height: 40px; background: var(--sky); right: 0; bottom: 0; border-radius: 18px 18px 6px 18px; }
+  .wordmark{ font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 52px; letter-spacing: -1px; z-index: 2; }
+  .wordmark .b{ color: var(--purple); } .wordmark .u{ color: var(--sky); }
+  .wordmark .bb{ color: #F5A8C7; } .wordmark .l{ color: #FFC861; } .wordmark .i{ color: #7ED0A8; }
+  .tagline{ color: var(--muted); font-weight: 700; margin: 10px 0 40px; z-index: 2; font-size: 15px; }
+  .btn{ border: none; cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 800;
+    border-radius: 18px; padding: 16px 22px; font-size: 16px; transition: transform .08s ease, box-shadow .15s ease; }
+  .btn:active{ transform: scale(0.97); }
+  .btn-primary{ background: var(--purple); color: #fff; box-shadow: 0 10px 20px rgba(124,58,237,0.35); }
+  .btn-primary:hover{ background: var(--purple-dark); }
+  .btn-block{ width: 100%; }
+  #welcome .btn-primary{ width: 230px; z-index: 2; }
+
+  /* ---------- NAME / PROFILE ---------- */
+  #name{ padding: 26px; justify-content: center; background: linear-gradient(160deg,#FBF8FF,#F3ECFF); }
+  .name-card{ text-align: center; position: relative; z-index: 1; }
+  .name-title{ font-family:'Fredoka',sans-serif; font-weight:700; font-size: 27px; margin-bottom: 6px; }
+  .name-sub{ color: var(--muted); font-weight: 700; margin-bottom: 18px; font-size: 14px; }
+  .avatar-preview{ width: 92px; height: 92px; margin: 0 auto 16px; filter: drop-shadow(0 8px 14px rgba(124,58,237,.2)); }
+  .pick-grid{ display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+  .pick{ width: 54px; height: 54px; border-radius: 16px; padding: 3px; border: 3px solid transparent;
+    cursor: pointer; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.05); transition: transform .1s ease, border-color .1s ease; }
+  .pick.sel{ border-color: var(--purple); transform: scale(1.08); }
+  .field{ width: 100%; border: 2px solid var(--line); background: #fff; border-radius: 16px;
+    padding: 15px 16px; font-family:'Nunito',sans-serif; font-size: 16px; font-weight: 700; color: var(--ink);
+    outline: none; transition: border-color .15s ease; }
+  .field:focus{ border-color: var(--purple); }
+  .field::placeholder{ color: #C9C2DC; font-weight: 700; }
+
+  /* ---------- HOME ---------- */
+  #home{ background: var(--bg); }
+  .topbar{ display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1;
+    padding: 18px 20px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .topbar .brand{ font-family:'Fredoka',sans-serif; font-weight:700; font-size: 26px; color: var(--purple); }
+  .topbar .brand .dot{ color: var(--sky); }
+  .avatar{ border-radius: 50%; overflow: hidden; flex: none; }
+  .avatar.sm{ width: 42px; height: 42px; } .avatar.md{ width: 50px; height: 50px; }
+  .avatar svg{ display: block; width: 100%; height: 100%; }
+
+  .home-scroll{ flex: 1; overflow-y: auto; padding: 16px; position: relative; z-index: 1; }
+  .code-card{ background: linear-gradient(135deg, var(--purple) 0%, #A78BFA 100%); color: #fff;
+    border-radius: 22px; padding: 18px 18px 16px; box-shadow: 0 14px 26px rgba(124,58,237,0.3); }
+  .code-card .label{ font-weight: 700; font-size: 13px; opacity: .85; }
+  .code-row{ display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .code-value{ font-family:'Fredoka',sans-serif; font-weight: 700; font-size: 30px; letter-spacing: 2px; }
+  .copy-btn{ background: rgba(255,255,255,0.22); border: none; color: #fff; cursor: pointer;
+    border-radius: 12px; padding: 9px 12px; font-weight: 800; font-family:'Nunito',sans-serif; font-size: 13px;
+    display:flex; align-items:center; gap:6px; transition: background .15s ease; }
+  .copy-btn:active{ background: rgba(255,255,255,0.4); }
+  .code-name{ margin-top: 10px; font-weight: 700; font-size: 14px; opacity: .9; }
+  .add-btn{ width: 100%; margin: 16px 0; background: #fff; border: 2px dashed #D9CEFA; color: var(--purple);
+    border-radius: 18px; padding: 14px; font-weight: 800; font-family:'Nunito',sans-serif; font-size: 15px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .add-btn:active{ background: var(--purple-soft); }
+  .section-title{ font-weight: 800; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 6px 4px 10px; }
+  .friend{ display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 18px;
+    padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: transform .08s ease;
+    box-shadow: 0 4px 12px rgba(124,72,160,0.06); }
+  .friend:active{ transform: scale(0.98); }
+  .friend .meta{ flex: 1; min-width: 0; }
+  .friend .name{ font-weight: 800; font-size: 16px; }
+  .friend .preview{ color: var(--muted); font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chev{ color: #D5CEE8; flex: none; }
+  .empty{ text-align: center; color: var(--muted); font-weight: 700; padding: 26px 20px; line-height: 1.5; font-size: 14px; }
+  .empty svg{ width: 42px; height: 42px; opacity: .7; margin-bottom: 8px; }
+
+  /* ---------- CHAT ---------- */
+  #chat{ background: var(--peach); }
+  .chat-head{ display: flex; align-items: center; gap: 12px; padding: 14px 16px; position: relative; z-index: 1;
+    background: var(--panel); border-bottom: 1px solid var(--line); }
+  .back{ background: none; border: none; cursor: pointer; color: var(--purple); display:flex; padding: 4px; }
+  .chat-head .who{ font-weight: 800; font-size: 17px; }
+  .chat-head .status{ color: var(--muted); font-weight: 600; font-size: 12px; }
+  .messages{ flex: 1; overflow-y: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 4px; position: relative; z-index: 1; }
+  .msg{ max-width: 76%; padding: 10px 14px; font-weight: 600; font-size: 15px; line-height: 1.35; word-wrap: break-word; }
+  .msg .time{ display:block; font-size: 10px; font-weight: 700; opacity: .65; margin-top: 4px; }
+  .msg.them{ align-self: flex-start; background: #fff; color: var(--ink); border-radius: 18px 18px 18px 6px; box-shadow: 0 3px 10px rgba(120,80,60,0.08); }
+  .msg.me{ align-self: flex-end; background: var(--sky); color: #fff; border-radius: 18px 18px 6px 18px; box-shadow: 0 4px 12px rgba(79,155,240,0.32); }
+  .smsg{ display: flex; flex-direction: column; max-width: 76%; margin: 2px 0; }
+  .smsg.me{ align-self: flex-end; align-items: flex-end; }
+  .smsg.them{ align-self: flex-start; align-items: flex-start; }
+  .smsg svg{ width: 88px; height: 88px; filter: drop-shadow(0 4px 8px rgba(0,0,0,.12)); }
+  .smsg .time{ font-size: 10px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+  .day{ align-self: center; background: rgba(255,255,255,0.7); color: var(--muted); font-weight: 800; font-size: 11px; padding: 5px 12px; border-radius: 20px; margin-bottom: 8px; }
+  .chat-empty{ align-self: center; text-align: center; color: #C9A48C; font-weight: 700; margin: auto; padding: 20px; font-size: 14px; }
+  .chat-empty svg{ width: 40px; height: 40px; margin-bottom: 6px; opacity: .8; }
+
+  .sticker-tray{ display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 14px;
+    background: #fff; border-top: 1px solid var(--line); position: relative; z-index: 1; }
+  .sticker-tray.show{ display: grid; }
+  .sticker-item{ background: var(--purple-soft); border: none; border-radius: 14px; padding: 7px; cursor: pointer; transition: transform .08s ease; }
+  .sticker-item:active{ transform: scale(0.9); }
+  .sticker-item svg{ width: 100%; height: auto; display: block; }
+
+  .composer{ display: flex; align-items: center; gap: 8px; padding: 12px 14px; position: relative; z-index: 1;
+    background: var(--panel); border-top: 1px solid var(--line); }
+  .composer .field{ flex: 1; border-radius: 24px; padding: 12px 16px; }
+  .sticker-btn{ flex: none; width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--purple-soft); color: var(--purple); display:flex; align-items:center; justify-content:center; transition: transform .08s ease; }
+  .sticker-btn:active{ transform: scale(0.92); }
+  .send{ flex: none; width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--purple); color: #fff; display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 8px 16px rgba(124,58,237,0.4); transition: transform .08s ease; }
+  .send:active{ transform: scale(0.92); }
+
+  /* ---------- MODAL + TOAST ---------- */
+  .overlay{ position: absolute; inset: 0; background: rgba(44,39,64,0.45); backdrop-filter: blur(2px);
+    display: none; align-items: center; justify-content: center; padding: 24px; z-index: 50; }
+  .overlay.show{ display: flex; }
+  .modal{ background: #fff; border-radius: 24px; padding: 22px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+  .modal h3{ font-family:'Fredoka',sans-serif; font-weight: 700; font-size: 21px; margin-bottom: 6px; }
+  .modal p{ color: var(--muted); font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .modal .mini-label{ font-weight: 800; font-size: 12px; color: var(--purple); text-transform: uppercase; letter-spacing: 1px; margin: 12px 0 6px; }
+  .modal .row{ display: flex; gap: 8px; }
+  .modal .row .field{ flex: 1; }
+  .modal .close-x{ background: var(--purple-soft); color: var(--purple); border-radius: 14px; padding: 12px; width: 100%; margin-top: 16px; font-family:'Nunito',sans-serif; font-weight:800; border:none; cursor:pointer; }
+  .toast{ position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; font-weight: 800; font-size: 14px; padding: 12px 18px; border-radius: 16px;
+    opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 80; white-space: nowrap; }
+  .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+  <!-- WELCOME -->
+  <section class="screen show" id="welcome">
+    <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+    <div class="logo-mark"><div class="bub big"></div><div class="bub small"></div></div>
+    <div class="wordmark"><span class="b">b</span><span class="u">u</span><span class="bb">b</span><span class="l">b</span><span class="i">l</span><span class="u">i</span></div>
+    <div class="tagline">more colour. more connection.</div>
+    <button class="btn btn-primary" id="startBtn">Let's get started</button>
+  </section>
+
+  <!-- NAME / PROFILE -->
+  <section class="screen" id="name">
+    <div class="deco" id="decoName"></div>
+    <div class="name-card">
+      <div class="name-title">Make your profile</div>
+      <div class="name-sub">Pick an avatar and a name your friends will see</div>
+      <div class="avatar-preview" id="avPreview"></div>
+      <div class="pick-grid" id="avatarPick"></div>
+      <input class="field" id="nameInput" placeholder="Type your name" maxlength="18" autocomplete="off">
+      <button class="btn btn-primary btn-block" id="nameBtn" style="margin-top:18px;">That's me!</button>
+    </div>
+  </section>
+
+  <!-- HOME -->
+  <section class="screen" id="home">
+    <div class="topbar">
+      <div class="brand">bubbl<span class="dot">i</span></div>
+      <div class="avatar sm" id="myAvatar"></div>
+    </div>
+    <div class="deco" id="decoHome"></div>
+    <div class="home-scroll">
+      <div class="code-card">
+        <div class="label">YOUR FRIEND CODE</div>
+        <div class="code-row">
+          <div class="code-value" id="myCode">----</div>
+          <button class="copy-btn" id="copyBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="code-name" id="myName">Hi there!</div>
+      </div>
+      <button class="add-btn" id="addBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add a friend
+      </button>
+      <div class="section-title">Chats</div>
+      <div id="friendList"></div>
+    </div>
+  </section>
+
+  <!-- CHAT -->
+  <section class="screen" id="chat">
+    <div class="chat-head">
+      <button class="back" id="backBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="avatar sm" id="chatAvatar"></div>
+      <div>
+        <div class="who" id="chatWho">Friend</div>
+        <div class="status">tap header to refresh</div>
+      </div>
+    </div>
+    <div class="deco" id="decoChat"></div>
+    <div class="messages" id="messages"></div>
+    <div class="sticker-tray" id="stickerTray"></div>
+    <div class="composer">
+      <button class="sticker-btn" id="stickerBtn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4 4 0 0 0 7 0"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/></svg>
+      </button>
+      <input class="field" id="msgInput" placeholder="Message..." autocomplete="off">
+      <button class="send" id="sendBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- MODAL -->
+  <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============================================================
+   bubbli - a colourful texting app
+   Messages live in a shared online "notebook" (window.storage),
+   so friends who open the same app can text each other for real.
+   ============================================================ */
+
+const mem = {};
+const store = (typeof window !== 'undefined' && window.storage) ? window.storage : {
+  get: async (k) => { if (k in mem) return { key: k, value: mem[k] }; throw new Error('missing'); },
+  set: async (k, v) => { mem[k] = v; return { key: k, value: v }; },
+  list: async (prefix) => ({ keys: Object.keys(mem).filter(k => k.startsWith(prefix || '')) }),
+  delete: async (k) => { delete mem[k]; return { key: k, deleted: true }; }
+};
+async function getJSON(key, shared, fallback) {
+  try { const r = await store.get(key, shared); return (r && r.value) ? JSON.parse(r.value) : fallback; }
+  catch (e) { return fallback; }
+}
+async function setJSON(key, val, shared) {
+  try { await store.set(key, JSON.stringify(val), shared); } catch (e) { console.warn('save failed', e); }
+}
+async function listKeys(prefix, shared) {
+  try { const r = await store.list(prefix, shared); return (r && r.keys) ? r.keys : []; }
+  catch (e) { return []; }
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function initialOf(name) { return (name || '?').trim().charAt(0).toUpperCase() || '?'; }
+function makeCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c = ''; for (let i = 0; i < 5; i++) c += chars[Math.floor(Math.random() * chars.length)];
+  return c;
+}
+function convId(a, b) { return [a, b].sort().join('~'); }
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+}
+let toastTimer;
+function toast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ---------- CUTE ANIMAL AVATARS (drawn as shapes, so no two look the same) ---------- */
+const AVATARS = ['cat', 'bunny', 'bear', 'panda', 'fox', 'frog'];
+function avatarSVG(id) {
+  const a = {
+    cat: `<circle cx="50" cy="50" r="48" fill="#FFE3C7"/><polygon points="30,32 26,13 44,26" fill="#F2A368"/><polygon points="70,32 74,13 56,26" fill="#F2A368"/><circle cx="50" cy="56" r="30" fill="#F9B97E"/><circle cx="41" cy="54" r="3.6" fill="#4A3526"/><circle cx="59" cy="54" r="3.6" fill="#4A3526"/><path d="M47 62 Q50 65 53 62" stroke="#4A3526" stroke-width="2.4" fill="none" stroke-linecap="round"/><circle cx="34" cy="61" r="4" fill="#FF9BB0" opacity=".6"/><circle cx="66" cy="61" r="4" fill="#FF9BB0" opacity=".6"/>`,
+    bunny: `<circle cx="50" cy="50" r="48" fill="#FFE7F1"/><ellipse cx="40" cy="27" rx="7" ry="18" fill="#fff" stroke="#F2C7D8" stroke-width="2"/><ellipse cx="60" cy="27" rx="7" ry="18" fill="#fff" stroke="#F2C7D8" stroke-width="2"/><ellipse cx="40" cy="28" rx="3" ry="11" fill="#FFC2DB"/><ellipse cx="60" cy="28" rx="3" ry="11" fill="#FFC2DB"/><circle cx="50" cy="59" r="27" fill="#fff"/><circle cx="42" cy="56" r="3.6" fill="#5b4636"/><circle cx="58" cy="56" r="3.6" fill="#5b4636"/><circle cx="50" cy="63" r="2.6" fill="#FF9BB0"/><circle cx="35" cy="62" r="4" fill="#FFB3C8" opacity=".55"/><circle cx="65" cy="62" r="4" fill="#FFB3C8" opacity=".55"/>`,
+    bear: `<circle cx="50" cy="50" r="48" fill="#EBDCC9"/><circle cx="30" cy="34" r="11" fill="#B98A5E"/><circle cx="70" cy="34" r="11" fill="#B98A5E"/><circle cx="30" cy="34" r="5" fill="#D8B58C"/><circle cx="70" cy="34" r="5" fill="#D8B58C"/><circle cx="50" cy="56" r="30" fill="#C89B6E"/><circle cx="50" cy="61" r="13" fill="#E7CFB0"/><circle cx="41" cy="52" r="3.6" fill="#4a3526"/><circle cx="59" cy="52" r="3.6" fill="#4a3526"/><ellipse cx="50" cy="59" rx="3.4" ry="2.4" fill="#4a3526"/><path d="M46 64 Q50 67 54 64" stroke="#4a3526" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    panda: `<circle cx="50" cy="50" r="48" fill="#E9E9F2"/><circle cx="30" cy="32" r="11" fill="#2f2b3a"/><circle cx="70" cy="32" r="11" fill="#2f2b3a"/><circle cx="50" cy="56" r="30" fill="#fff"/><ellipse cx="40" cy="54" rx="8" ry="10" fill="#2f2b3a" transform="rotate(-15 40 54)"/><ellipse cx="60" cy="54" rx="8" ry="10" fill="#2f2b3a" transform="rotate(15 60 54)"/><circle cx="40" cy="54" r="3" fill="#fff"/><circle cx="60" cy="54" r="3" fill="#fff"/><ellipse cx="50" cy="65" rx="3.4" ry="2.4" fill="#2f2b3a"/>`,
+    fox: `<circle cx="50" cy="50" r="48" fill="#FFE0CE"/><polygon points="30,30 24,11 44,24" fill="#E98A57"/><polygon points="70,30 76,11 56,24" fill="#E98A57"/><circle cx="50" cy="54" r="30" fill="#F59A63"/><ellipse cx="50" cy="67" rx="18" ry="14" fill="#fff"/><circle cx="42" cy="52" r="3.6" fill="#3a2a22"/><circle cx="58" cy="52" r="3.6" fill="#3a2a22"/><ellipse cx="50" cy="64" rx="3.4" ry="2.4" fill="#3a2a22"/>`,
+    frog: `<circle cx="50" cy="50" r="48" fill="#DFF3DF"/><circle cx="35" cy="34" r="11" fill="#8BCB6A"/><circle cx="65" cy="34" r="11" fill="#8BCB6A"/><circle cx="35" cy="33" r="4.6" fill="#2f3a2a"/><circle cx="65" cy="33" r="4.6" fill="#2f3a2a"/><circle cx="50" cy="58" r="28" fill="#9ED77C"/><path d="M38 60 Q50 70 62 60" stroke="#3a5a2a" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="40" cy="62" r="3.4" fill="#C7E8AE" opacity=".7"/><circle cx="60" cy="62" r="3.4" fill="#C7E8AE" opacity=".7"/>`
+  };
+  const inner = a[id] || a.cat;
+  return `<svg viewBox="0 0 100 100" width="100%" height="100%">${inner}</svg>`;
+}
+function setAvatar(el, id) { el.innerHTML = avatarSVG(id); }
+
+/* ---------- STICKERS (drawn, so they have the bubbli look) ---------- */
+const STICKERS = ['heart', 'star', 'rainbow', 'flower', 'smiley', 'cupcake', 'sparkle', 'sun'];
+function stickerSVG(id) {
+  const s = {
+    heart: `<path d="M50 84 C20 64 10 44 22 30 C32 18 46 22 50 34 C54 22 68 18 78 30 C90 44 80 64 50 84 Z" fill="#FF7AA2"/><ellipse cx="40" cy="40" rx="6" ry="9" fill="#fff" opacity=".45"/>`,
+    star: `<path d="M50 10 L61 38 L92 40 L67 60 L75 90 L50 72 L25 90 L33 60 L8 40 L39 38 Z" fill="#FFC93C"/>`,
+    rainbow: `<path d="M18 72 A32 32 0 0 1 82 72" fill="none" stroke="#FF8FA3" stroke-width="9"/><path d="M28 72 A22 22 0 0 1 72 72" fill="none" stroke="#FFD166" stroke-width="9"/><path d="M38 72 A12 12 0 0 1 62 72" fill="none" stroke="#7FD8A6" stroke-width="9"/><circle cx="18" cy="74" r="9" fill="#fff"/><circle cx="82" cy="74" r="9" fill="#fff"/>`,
+    flower: `<g fill="#FF9CC4"><ellipse cx="50" cy="30" rx="9" ry="15" transform="rotate(0 50 50)"/><ellipse cx="50" cy="30" rx="9" ry="15" transform="rotate(60 50 50)"/><ellipse cx="50" cy="30" rx="9" ry="15" transform="rotate(120 50 50)"/><ellipse cx="50" cy="30" rx="9" ry="15" transform="rotate(180 50 50)"/><ellipse cx="50" cy="30" rx="9" ry="15" transform="rotate(240 50 50)"/><ellipse cx="50" cy="30" rx="9" ry="15" transform="rotate(300 50 50)"/></g><circle cx="50" cy="50" r="11" fill="#FFD166"/>`,
+    smiley: `<circle cx="50" cy="50" r="42" fill="#FFD23F"/><circle cx="38" cy="44" r="5" fill="#3a2e1a"/><circle cx="62" cy="44" r="5" fill="#3a2e1a"/><path d="M34 60 Q50 76 66 60" stroke="#3a2e1a" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="29" cy="56" r="5" fill="#FF9BB0" opacity=".55"/><circle cx="71" cy="56" r="5" fill="#FF9BB0" opacity=".55"/>`,
+    cupcake: `<path d="M30 52 L70 52 L64 84 L36 84 Z" fill="#F4B860"/><rect x="29" y="49" width="42" height="7" rx="3" fill="#E8A648"/><path d="M28 52 C24 34 38 28 42 30 C44 18 60 18 62 30 C76 30 76 46 72 52 Z" fill="#FF9CC4"/><circle cx="50" cy="22" r="5" fill="#FF6B6B"/><circle cx="44" cy="44" r="2" fill="#fff"/><circle cx="56" cy="42" r="2" fill="#7FD8A6"/><circle cx="50" cy="48" r="2" fill="#8FB3FF"/>`,
+    sparkle: `<path d="M50 8 C54 36 64 46 92 50 C64 54 54 64 50 92 C46 64 36 54 8 50 C36 46 46 36 50 8 Z" fill="#9B8CFF"/><path d="M80 14 C81 23 84 26 92 27 C84 28 81 31 80 40 C79 31 76 28 68 27 C76 26 79 23 80 14 Z" fill="#FFC2DB"/>`,
+    sun: `<g stroke="#FFB300" stroke-width="5" stroke-linecap="round"><line x1="50" y1="13" x2="50" y2="24" transform="rotate(0 50 50)"/><line x1="50" y1="13" x2="50" y2="24" transform="rotate(45 50 50)"/><line x1="50" y1="13" x2="50" y2="24" transform="rotate(90 50 50)"/><line x1="50" y1="13" x2="50" y2="24" transform="rotate(135 50 50)"/><line x1="50" y1="13" x2="50" y2="24" transform="rotate(180 50 50)"/><line x1="50" y1="13" x2="50" y2="24" transform="rotate(225 50 50)"/><line x1="50" y1="13" x2="50" y2="24" transform="rotate(270 50 50)"/><line x1="50" y1="13" x2="50" y2="24" transform="rotate(315 50 50)"/></g><circle cx="50" cy="50" r="21" fill="#FFC93C"/><circle cx="43" cy="48" r="2.5" fill="#7a5a00"/><circle cx="57" cy="48" r="2.5" fill="#7a5a00"/><path d="M43 55 Q50 61 57 55" stroke="#7a5a00" stroke-width="3" fill="none" stroke-linecap="round"/>`
+  };
+  const inner = s[id] || s.star;
+  return `<svg viewBox="0 0 100 100">${inner}</svg>`;
+}
+
+/* ---------- sparkle decoration ---------- */
+const SPARKLE = `<svg class="s" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0 C13 8 16 11 24 12 C16 13 13 16 12 24 C11 16 8 13 0 12 C8 11 11 8 12 0 Z"/></svg>`;
+const MINISTAR = `<svg class="s" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L21 9l-5 4.2L17.8 21 12 16.6 6.2 21 8 13.2 3 9l6.4-.4z"/></svg>`;
+function decorate(el, items) {
+  el.innerHTML = items.map(it => {
+    const svg = (it.shape === 'star') ? MINISTAR : SPARKLE;
+    return svg.replace('class="s"', `class="s" style="top:${it.t}%;left:${it.l}%;width:${it.w}px;color:${it.c};transform:rotate(${it.r||0}deg);opacity:${it.o||.5}"`);
+  }).join('');
+}
+const HOME_SPARKLES = [
+  {t:4,l:10,w:24,c:'#C9B6FF',shape:'sparkle',r:6},{t:8,l:80,w:18,c:'#FFC2DB',shape:'star',r:-8},
+  {t:22,l:55,w:14,c:'#FFE49C',shape:'sparkle'},{t:30,l:6,w:16,c:'#B6D8FF',shape:'star',r:12},
+  {t:44,l:88,w:22,c:'#C9B6FF',shape:'sparkle',r:-6},{t:52,l:38,w:12,c:'#BFE9D6',shape:'star'},
+  {t:62,l:14,w:20,c:'#FFC2DB',shape:'sparkle',r:10},{t:70,l:78,w:15,c:'#FFE49C',shape:'star',r:-10},
+  {t:82,l:30,w:18,c:'#B6D8FF',shape:'sparkle'},{t:88,l:62,w:22,c:'#C9B6FF',shape:'star',r:8},
+  {t:15,l:30,w:12,c:'#BFE9D6',shape:'sparkle'},{t:38,l:68,w:14,c:'#FFC2DB',shape:'star',r:-6}
+];
+const CHAT_SPARKLES = [
+  {t:6,l:14,w:18,c:'#FFD7B8',shape:'sparkle',o:.4},{t:12,l:78,w:14,c:'#FFCEB0',shape:'star',o:.35},
+  {t:40,l:88,w:16,c:'#FFD7B8',shape:'sparkle',o:.35},{t:58,l:8,w:14,c:'#FFCEB0',shape:'star',o:.35},
+  {t:80,l:84,w:18,c:'#FFD7B8',shape:'sparkle',o:.4},{t:88,l:22,w:13,c:'#FFCEB0',shape:'star',o:.35}
+];
+const NAME_SPARKLES = [
+  {t:8,l:12,w:20,c:'#C9B6FF',shape:'sparkle'},{t:14,l:82,w:16,c:'#FFC2DB',shape:'star',r:-8},
+  {t:75,l:10,w:18,c:'#B6D8FF',shape:'sparkle'},{t:84,l:80,w:20,c:'#FFE49C',shape:'star',r:8}
+];
+
+/* ============ APP STATE ============ */
+let me = null;
+let currentChat = null;
+let pollTimer = null;
+let selectedAvatar = 'cat';
+
+/* ---------- avatar picker on the profile screen ---------- */
+function renderAvatarPicker() {
+  const grid = document.getElementById('avatarPick');
+  grid.innerHTML = AVATARS.map(id => `<button class="pick ${id === selectedAvatar ? 'sel' : ''}" data-av="${id}">${avatarSVG(id)}</button>`).join('');
+  grid.querySelectorAll('.pick').forEach(b => b.onclick = () => {
+    selectedAvatar = b.dataset.av; renderAvatarPicker();
+  });
+  document.getElementById('avPreview').innerHTML = avatarSVG(selectedAvatar);
+}
+
+/* ============ SETUP ============ */
+document.getElementById('startBtn').onclick = () => {
+  show('name'); renderAvatarPicker(); document.getElementById('nameInput').focus();
+};
+document.getElementById('nameBtn').onclick = saveName;
+document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
+
+async function saveName() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) { toast('Please type a name'); return; }
+  me = { name: name, code: makeCode(), avatar: selectedAvatar };
+  await setJSON('me', me, false);
+  await setJSON('user:' + me.code, me, true);
+  await setJSON('friends:' + me.code, [], true);
+  goHome();
+}
+
+/* ============ HOME ============ */
+async function goHome() {
+  document.getElementById('myCode').textContent = me.code;
+  document.getElementById('myName').textContent = 'You are ' + me.name;
+  setAvatar(document.getElementById('myAvatar'), me.avatar);
+  show('home');
+  await renderFriends();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(renderFriends, 5000);
+}
+async function renderFriends() {
+  const codes = await getJSON('friends:' + me.code, true, []);
+  const list = document.getElementById('friendList');
+  if (!codes.length) {
+    list.innerHTML = `<div class="empty"><svg viewBox="0 0 100 100">${stickerSVG('sparkle').replace('<svg viewBox="0 0 100 100">','').replace('</svg>','')}</svg><br>No friends yet.<br>Tap <b>Add a friend</b> and share your code so people can find you.</div>`;
+    return;
+  }
+  let html = '';
+  for (const code of codes) {
+    const u = await getJSON('user:' + code, true, { name: code, code, avatar: 'cat' });
+    const last = await lastPreview(code);
+    html += `
+      <div class="friend" data-code="${esc(code)}">
+        <div class="avatar md">${avatarSVG(u.avatar || 'cat')}</div>
+        <div class="meta">
+          <div class="name">${esc(u.name)}</div>
+          <div class="preview">${last ? esc(last) : 'Say hi!'}</div>
+        </div>
+        <div class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>`;
+  }
+  list.innerHTML = html;
+  list.querySelectorAll('.friend').forEach(f => f.onclick = () => openChat(f.dataset.code));
+}
+async function lastPreview(friendCode) {
+  const id = convId(me.code, friendCode);
+  const keys = await listKeys('msg:' + id + ':', true);
+  if (!keys.length) return null;
+  keys.sort();
+  const m = await getJSON(keys[keys.length - 1], true, null);
+  if (!m) return null;
+  return m.type === 'sticker' ? 'Sent a sticker' : m.text;
+}
+
+/* ============ ADD FRIEND (mutual) ============ */
+function closeModal() { document.getElementById('overlay').classList.remove('show'); }
+function openAddFriendModal() {
+  const m = document.getElementById('modal');
+  m.innerHTML = `
+    <h3>Add a friend</h3>
+    <p>Use their code, or their exact name.</p>
+    <div class="mini-label">By friend code</div>
+    <div class="row">
+      <input class="field" id="addCode" placeholder="e.g. K7P2Q" maxlength="5" autocomplete="off">
+      <button class="btn btn-primary" id="addCodeBtn" style="padding:12px 16px;">Add</button>
+    </div>
+    <div class="mini-label">By name</div>
+    <div class="row">
+      <input class="field" id="addName" placeholder="Their name" maxlength="18" autocomplete="off">
+      <button class="btn btn-primary" id="addNameBtn" style="padding:12px 16px;">Add</button>
+    </div>
+    <button class="close-x" id="closeModalBtn">Cancel</button>`;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('closeModalBtn').onclick = closeModal;
+  document.getElementById('addCodeBtn').onclick = () => addFriendByCode(document.getElementById('addCode').value);
+  document.getElementById('addNameBtn').onclick = () => addFriendByName(document.getElementById('addName').value);
+}
+async function linkUp(otherCode) {
+  const mine = await getJSON('friends:' + me.code, true, []);
+  if (!mine.includes(otherCode)) { mine.push(otherCode); await setJSON('friends:' + me.code, mine, true); }
+  const theirs = await getJSON('friends:' + otherCode, true, []);
+  if (!theirs.includes(me.code)) { theirs.push(me.code); await setJSON('friends:' + otherCode, theirs, true); }
+}
+async function addFriendByCode(raw) {
+  const code = (raw || '').trim().toUpperCase();
+  if (!code) { toast('Type a code first'); return; }
+  if (code === me.code) { toast("That's your own code!"); return; }
+  const u = await getJSON('user:' + code, true, null);
+  if (!u) { toast('No one found with that code yet'); return; }
+  await linkUp(code); closeModal(); toast(u.name + ' added!'); renderFriends();
+}
+async function addFriendByName(raw) {
+  const name = (raw || '').trim();
+  if (!name) { toast('Type a name first'); return; }
+  const keys = await listKeys('user:', true);
+  let found = null;
+  for (const k of keys) {
+    const u = await getJSON(k, true, null);
+    if (u && u.name.toLowerCase() === name.toLowerCase() && u.code !== me.code) { found = u; break; }
+  }
+  if (!found) { toast('No one found with that name yet'); return; }
+  await linkUp(found.code); closeModal(); toast(found.name + ' added!'); renderFriends();
+}
+
+/* ============ CHAT ============ */
+async function openChat(friendCode) {
+  currentChat = friendCode;
+  document.getElementById('stickerTray').classList.remove('show');
+  const u = await getJSON('user:' + friendCode, true, { name: friendCode, avatar: 'cat' });
+  document.getElementById('chatWho').textContent = u.name;
+  setAvatar(document.getElementById('chatAvatar'), u.avatar || 'cat');
+  show('chat');
+  await renderMessages();
+  document.getElementById('msgInput').focus();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(renderMessages, 2500);
+}
+async function renderMessages() {
+  if (!currentChat) return;
+  const id = convId(me.code, currentChat);
+  const keys = await listKeys('msg:' + id + ':', true);
+  const box = document.getElementById('messages');
+  if (!keys.length) {
+    box.innerHTML = `<div class="chat-empty">${stickerSVG('heart')}<br>No messages yet.<br>Send the first one!</div>`;
+    return;
+  }
+  keys.sort();
+  const msgs = [];
+  for (const k of keys) { const m = await getJSON(k, true, null); if (m) msgs.push(m); }
+  let html = `<div class="day">Today</div>`;
+  for (const m of msgs) {
+    const mine = m.from === me.code;
+    const time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (m.type === 'sticker') {
+      html += `<div class="smsg ${mine ? 'me' : 'them'}">${stickerSVG(m.sticker)}<span class="time">${time}</span></div>`;
+    } else {
+      html += `<div class="msg ${mine ? 'me' : 'them'}">${esc(m.text)}<span class="time">${time}</span></div>`;
+    }
+  }
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+}
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text || !currentChat) return;
+  const id = convId(me.code, currentChat);
+  const key = 'msg:' + id + ':' + Date.now() + '_' + Math.floor(Math.random() * 9999);
+  await setJSON(key, { from: me.code, to: currentChat, type: 'text', text: text, time: Date.now() }, true);
+  input.value = '';
+  await renderMessages();
+}
+async function sendSticker(stickerId) {
+  if (!currentChat) return;
+  const id = convId(me.code, currentChat);
+  const key = 'msg:' + id + ':' + Date.now() + '_' + Math.floor(Math.random() * 9999);
+  await setJSON(key, { from: me.code, to: currentChat, type: 'sticker', sticker: stickerId, time: Date.now() }, true);
+  document.getElementById('stickerTray').classList.remove('show');
+  await renderMessages();
+}
+function renderStickerTray() {
+  const tray = document.getElementById('stickerTray');
+  tray.innerHTML = STICKERS.map(id => `<button class="sticker-item" data-st="${id}">${stickerSVG(id)}</button>`).join('');
+  tray.querySelectorAll('.sticker-item').forEach(b => b.onclick = () => sendSticker(b.dataset.st));
+}
+
+/* ---------- buttons ---------- */
+document.getElementById('sendBtn').onclick = sendMessage;
+document.getElementById('msgInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+document.getElementById('backBtn').onclick = () => { currentChat = null; goHome(); };
+document.getElementById('addBtn').onclick = openAddFriendModal;
+document.getElementById('stickerBtn').onclick = () => document.getElementById('stickerTray').classList.toggle('show');
+document.querySelector('.chat-head').addEventListener('click', e => { if (!e.target.closest('.back')) renderMessages(); });
+document.getElementById('copyBtn').onclick = async () => {
+  try { await navigator.clipboard.writeText(me.code); toast('Code copied!'); }
+  catch (e) { toast('Your code is ' + me.code); }
+};
+
+/* ============ START UP ============ */
+(async function init() {
+  decorate(document.getElementById('decoHome'), HOME_SPARKLES);
+  decorate(document.getElementById('decoChat'), CHAT_SPARKLES);
+  decorate(document.getElementById('decoName'), NAME_SPARKLES);
+  renderStickerTray();
+  me = await getJSON('me', false, null);
+  if (me) { if (!me.avatar) me.avatar = 'cat'; goHome(); } else { show('welcome'); }
+})();
+</script>
+</body>
+</html>
